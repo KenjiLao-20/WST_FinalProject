@@ -20,7 +20,25 @@ small_font = pygame.font.Font(None, 20)
 # Load enemy images
 Enemy.load_images()
 
-# Colors
+# Load background images
+title_background = None
+game_background = None
+
+try:
+    title_background = pygame.image.load("assets/title.png").convert_alpha()
+    title_background = pygame.transform.scale(title_background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    print("✓ title.png loaded successfully!")
+except:
+    print("✗ Could not load assets/title.png - using black background instead")
+
+try:
+    game_background = pygame.image.load("assets/background.png").convert_alpha()
+    game_background = pygame.transform.scale(game_background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    print("✓ background.png loaded successfully!")
+except:
+    print("✗ Could not load assets/background.png - using black background instead")
+
+# Colors (for fallback text)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -38,8 +56,19 @@ def draw_text(text, font, color, x, y, center=False):
 
 def menu():
     while True:
-        screen.fill(BLACK)
+        # Draw background
+        if title_background:
+            screen.blit(title_background, (0, 0))
+        else:
+            screen.fill(BLACK)
         
+        # Draw semi-transparent overlay for better text readability
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay.set_alpha(128)
+        overlay.fill(BLACK)
+        screen.blit(overlay, (0, 0))
+        
+        # Title text with glow effect
         draw_text("5 MINUTES TILL DAWN", big_font, YELLOW, SCREEN_WIDTH//2, 150, center=True)
         draw_text("Survive 5 Minutes Against Endless Hordes", font, WHITE, SCREEN_WIDTH//2, 250, center=True)
         draw_text("Level 1: 15 kills | Level 2: 25 kills | Level 3: 35 kills | etc", small_font, YELLOW, SCREEN_WIDTH//2, 300, center=True)
@@ -78,7 +107,16 @@ def show_level_up_screen(choices, current_level, kills_needed_for_next):
                     return selected
         
         # Draw the screen
-        screen.fill(BLACK)
+        if game_background:
+            screen.blit(game_background, (0, 0))
+        else:
+            screen.fill(BLACK)
+        
+        # Semi-transparent overlay for level up screen
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay.set_alpha(180)
+        overlay.fill(BLACK)
+        screen.blit(overlay, (0, 0))
         
         # Title
         draw_text(f"LEVEL {current_level} COMPLETE!", big_font, YELLOW, SCREEN_WIDTH//2, 80, center=True)
@@ -261,8 +299,11 @@ def game_loop():
                                 bullets.remove(bullet)
                         break
         
-        # Draw everything
-        screen.fill(BLACK)
+        # Draw everything - with game background
+        if game_background:
+            screen.blit(game_background, (0, 0))
+        else:
+            screen.fill(BLACK)
         
         # Draw particles
         for p in particles[:]:
@@ -277,6 +318,12 @@ def game_loop():
         for enemy in enemies:
             enemy.draw(screen)
         player.draw(screen)
+        
+        # Semi-transparent UI background for better text visibility
+        ui_panel = pygame.Surface((250, 130))
+        ui_panel.set_alpha(180)
+        ui_panel.fill(BLACK)
+        screen.blit(ui_panel, (0, 0))
         
         # CLEAN UI - Top left corner, compact
         kills_left = kills_needed_for_current_level - kills_this_level
@@ -300,7 +347,12 @@ def game_loop():
         # Show active power-ups (compact row at bottom of screen)
         if player.active_powerups:
             powerup_text = " | ".join(player.active_powerups[-3:])
-            draw_text(f"POWER-UPS: {powerup_text}", small_font, BLUE, 10, SCREEN_HEIGHT - 20)
+            # Add semi-transparent background for power-up text
+            power_bg = pygame.Surface((300, 25))
+            power_bg.set_alpha(180)
+            power_bg.fill(BLACK)
+            screen.blit(power_bg, (5, SCREEN_HEIGHT - 30))
+            draw_text(f"POWER-UPS: {powerup_text}", small_font, BLUE, 10, SCREEN_HEIGHT - 25)
         
         # Difficulty indicator (top right)
         difficulty_color = GREEN
@@ -329,7 +381,17 @@ def game_loop():
 
 def game_over_screen(result, score, kills, level):
     while True:
-        screen.fill(BLACK)
+        # Draw background
+        if game_background:
+            screen.blit(game_background, (0, 0))
+        else:
+            screen.fill(BLACK)
+        
+        # Semi-transparent overlay
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay.set_alpha(180)
+        overlay.fill(BLACK)
+        screen.blit(overlay, (0, 0))
         
         if result == "win":
             draw_text("VICTORY!", big_font, GREEN, SCREEN_WIDTH//2, 150, center=True)
