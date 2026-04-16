@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+import os
 
 class Enemy:
     # Class variables for global difficulty scaling
@@ -16,25 +17,35 @@ class Enemy:
     @classmethod
     def load_images(cls):
         """Load enemy images once at game start"""
+        # Get the correct path to assets folder
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        red_path = os.path.join(script_dir, "assets", "red.png")
+        yellow_path = os.path.join(script_dir, "assets", "yellow.png")
+        blue_path = os.path.join(script_dir, "assets", "blue.png")
+        
         try:
-            cls.red_image = pygame.image.load("assets/red.png").convert_alpha()
+            cls.red_image = pygame.image.load(red_path).convert_alpha()
             cls.red_image = pygame.transform.scale(cls.red_image, (32, 32))
-        except:
-            print("Warning: Could not load assets/red.png")
+            print("✓ red.png loaded")
+        except Exception as e:
+            print(f"✗ Could not load red.png: {e}")
             cls.red_image = None
             
         try:
-            cls.yellow_image = pygame.image.load("assets/yellow.png").convert_alpha()
+            cls.yellow_image = pygame.image.load(yellow_path).convert_alpha()
             cls.yellow_image = pygame.transform.scale(cls.yellow_image, (24, 24))
-        except:
-            print("Warning: Could not load assets/yellow.png")
+            print("✓ yellow.png loaded")
+        except Exception as e:
+            print(f"✗ Could not load yellow.png: {e}")
             cls.yellow_image = None
             
         try:
-            cls.blue_image = pygame.image.load("assets/blue.png").convert_alpha()
+            cls.blue_image = pygame.image.load(blue_path).convert_alpha()
             cls.blue_image = pygame.transform.scale(cls.blue_image, (40, 40))
-        except:
-            print("Warning: Could not load assets/blue.png")
+            print("✓ blue.png loaded")
+        except Exception as e:
+            print(f"✗ Could not load blue.png: {e}")
             cls.blue_image = None
     
     @classmethod
@@ -70,7 +81,7 @@ class Enemy:
             self.type = 'fast'
             self.base_speed = 3.5
             self.base_health = 1
-            self.radius = 12  # Half of 24
+            self.radius = 12
             self.color = (255, 200, 0)
             self.score_value = 15
             self.image = Enemy.yellow_image
@@ -78,7 +89,7 @@ class Enemy:
             self.type = 'tank'
             self.base_speed = 1.2
             self.base_health = 3
-            self.radius = 20  # Half of 40
+            self.radius = 20
             self.color = (0, 100, 255)
             self.score_value = 25
             self.image = Enemy.blue_image
@@ -86,7 +97,7 @@ class Enemy:
             self.type = 'normal'
             self.base_speed = 2.0
             self.base_health = 2
-            self.radius = 16  # Half of 32
+            self.radius = 16
             self.color = (255, 0, 0)
             self.score_value = 10
             self.image = Enemy.red_image
@@ -128,7 +139,6 @@ class Enemy:
         if self.image:
             screen.blit(self.image, (self.x - self.radius, self.y - self.radius))
         else:
-            # Fallback to colored circle if image not found
             pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
         
         # Show health number on tank enemies
