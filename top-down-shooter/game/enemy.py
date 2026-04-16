@@ -8,6 +8,35 @@ class Enemy:
     global_hp_multiplier = 1.0
     global_speed_multiplier = 1.0
     
+    # Class variables for images
+    red_image = None
+    yellow_image = None
+    blue_image = None
+    
+    @classmethod
+    def load_images(cls):
+        """Load enemy images once at game start"""
+        try:
+            cls.red_image = pygame.image.load("assets/red.png").convert_alpha()
+            cls.red_image = pygame.transform.scale(cls.red_image, (32, 32))
+        except:
+            print("Warning: Could not load assets/red.png")
+            cls.red_image = None
+            
+        try:
+            cls.yellow_image = pygame.image.load("assets/yellow.png").convert_alpha()
+            cls.yellow_image = pygame.transform.scale(cls.yellow_image, (24, 24))
+        except:
+            print("Warning: Could not load assets/yellow.png")
+            cls.yellow_image = None
+            
+        try:
+            cls.blue_image = pygame.image.load("assets/blue.png").convert_alpha()
+            cls.blue_image = pygame.transform.scale(cls.blue_image, (40, 40))
+        except:
+            print("Warning: Could not load assets/blue.png")
+            cls.blue_image = None
+    
     @classmethod
     def update_difficulty(cls, minutes_passed):
         """Update global difficulty based on minutes elapsed"""
@@ -41,23 +70,26 @@ class Enemy:
             self.type = 'fast'
             self.base_speed = 3.5
             self.base_health = 1
-            self.radius = 10
+            self.radius = 12  # Half of 24
             self.color = (255, 200, 0)
             self.score_value = 15
+            self.image = Enemy.yellow_image
         elif enemy_roll < 0.6:  # 30% chance for tank (blue)
             self.type = 'tank'
             self.base_speed = 1.2
             self.base_health = 3
-            self.radius = 20
+            self.radius = 20  # Half of 40
             self.color = (0, 100, 255)
             self.score_value = 25
+            self.image = Enemy.blue_image
         else:  # 40% chance for normal (red)
             self.type = 'normal'
             self.base_speed = 2.0
             self.base_health = 2
-            self.radius = 14
+            self.radius = 16  # Half of 32
             self.color = (255, 0, 0)
             self.score_value = 10
+            self.image = Enemy.red_image
         
         # Apply difficulty scaling
         self.speed = self.base_speed + (self.base_speed * Enemy.global_speed_multiplier * 0.3)
@@ -65,7 +97,7 @@ class Enemy:
         
         # Scale health based on difficulty
         scaled_health = int(self.base_health * Enemy.global_hp_multiplier)
-        self.max_health = max(self.base_health, min(scaled_health, self.base_health * 3))  # Cap at 3x base
+        self.max_health = max(self.base_health, min(scaled_health, self.base_health * 3))
         self.health = self.max_health
         
         self.rect = pygame.Rect(self.x - self.radius, self.y - self.radius, self.radius * 2, self.radius * 2)
@@ -84,7 +116,7 @@ class Enemy:
         self.rect.center = (self.x, self.y)
 
     def draw(self, screen):
-        # Draw health bar
+        # Draw health bar if damaged
         if self.health < self.max_health:
             bar_width = self.radius * 2
             bar_height = 4
@@ -92,36 +124,15 @@ class Enemy:
             pygame.draw.rect(screen, (255, 0, 0), (self.x - bar_width//2, self.y - self.radius - 5, bar_width, bar_height))
             pygame.draw.rect(screen, (0, 255, 0), (self.x - bar_width//2, self.y - self.radius - 5, bar_width * health_percent, bar_height))
         
-        # Draw enemy with pulsing effect if high health
-        if self.max_health > self.base_health * 2:
-            # Pulsing effect for buffed enemies
-            pulse = (pygame.time.get_ticks() % 500) / 500
-            color_variant = tuple(min(255, int(c * (0.8 + pulse * 0.4))) for c in self.color)
-            pygame.draw.circle(screen, color_variant, (int(self.x), int(self.y)), self.radius)
+        # Draw enemy image or fallback circle
+        if self.image:
+            screen.blit(self.image, (self.x - self.radius, self.y - self.radius))
         else:
+            # Fallback to colored circle if image not found
             pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
-        
-        # Eyes
-        eye_size = max(2, self.radius // 4)
-        eye_offset = self.radius // 3
-        
-        # White of eyes
-        pygame.draw.circle(screen, (255, 255, 255), (int(self.x - eye_offset), int(self.y - eye_offset)), eye_size)
-        pygame.draw.circle(screen, (255, 255, 255), (int(self.x + eye_offset), int(self.y - eye_offset)), eye_size)
-        
-        # Pupils (follow player direction - simplified)
-        pygame.draw.circle(screen, (0, 0, 0), (int(self.x - eye_offset + 2), int(self.y - eye_offset + 1)), eye_size//2)
-        pygame.draw.circle(screen, (0, 0, 0), (int(self.x + eye_offset + 2), int(self.y - eye_offset + 1)), eye_size//2)
-        
-        # Angry eyebrows for tank
-        if self.type == 'tank':
-            pygame.draw.line(screen, (0, 0, 0), (self.x - eye_offset - 3, self.y - eye_offset - 2), 
-                           (self.x - eye_offset + 3, self.y - eye_offset + 1), 2)
-            pygame.draw.line(screen, (0, 0, 0), (self.x + eye_offset + 3, self.y - eye_offset - 2), 
-                           (self.x + eye_offset - 3, self.y - eye_offset + 1), 2)
         
         # Show health number on tank enemies
         if self.type == 'tank' and self.max_health > 3:
             font = pygame.font.Font(None, 12)
-            health_text = font.render(str(self.health), True, (255, 255, 255))
-            screen.blit(health_text, (self.x - 5, self.y - self.radius - 10))
+            health_text = font.render(str(int(self.health)), True, (255, 255, 255))
+            screen.blit(health_text, (self.x - 5, self.y - self.radius - 12))

@@ -1,6 +1,5 @@
 import pygame
 import math
-import random
 
 class Player:
     def __init__(self, x, y):
@@ -9,17 +8,16 @@ class Player:
         self.base_speed = 5
         self.speed_bonus = 0
         self.speed = self.base_speed
-        self.radius = 15
+        self.radius = 20  # For collision detection
         
         # Health system
         self.max_health = 100
         self.health = 100
         self.invincible_frames = 0
+        self.invincible_duration = 30
         
-        # Shooting stats
-        self.ammo = 30
-        self.max_ammo = 30
-        self.fire_delay = 10
+        # Shooting stats - UNLIMITED AMMO
+        self.fire_delay = 8
         self.fire_timer = 0
         self.bullet_count = 1
         self.pierce = 0
@@ -34,6 +32,16 @@ class Player:
         
         self.active_powerups = []
         self.rect = pygame.Rect(x - self.radius, y - self.radius, self.radius * 2, self.radius * 2)
+        
+        # Load player image
+        try:
+            self.image = pygame.image.load("assets/green.png").convert_alpha()
+            # Scale image to appropriate size (40x40 pixels)
+            self.image = pygame.transform.scale(self.image, (40, 40))
+            self.radius = 20  # Half of 40
+        except:
+            print("Warning: Could not load assets/green.png, using circle instead")
+            self.image = None
 
     def update(self):
         keys = pygame.key.get_pressed()
@@ -61,8 +69,7 @@ class Player:
         damage = 20 * (1 - self.damage_reduction)
         self.health -= damage
         
-        if self.invincible_on_hit:
-            self.invincible_frames = 30
+        self.invincible_frames = self.invincible_duration
         
         return self.health <= 0
 
@@ -70,38 +77,54 @@ class Player:
         self.health = min(self.max_health, self.health + amount)
 
     def can_shoot(self):
-        return self.ammo > 0 and self.fire_timer == 0
+        return self.fire_timer == 0
 
     def shoot(self, target_pos):
-        self.ammo -= 1
         self.fire_timer = self.fire_delay
         
         from bullet import Bullet
         bullets = []
         
         # Multi-shot spread
-        angles = [-0.2, 0, 0.2] if self.bullet_count >= 3 else [-0.1, 0.1] if self.bullet_count == 2 else [0]
+        if self.bullet_count == 1:
+            angles = [0]
+        elif self.bullet_count == 2:
+            angles = [-0.15, 0.15]
+        elif self.bullet_count == 3:
+            angles = [-0.2, 0, 0.2]
+        elif self.bullet_count == 4:
+            angles = [-0.25, -0.1, 0.1, 0.25]
+        else:
+            angles = [-0.3, -0.15, 0, 0.15, 0.3]
         
-        for i in range(self.bullet_count):
-            angle_offset = angles[i % len(angles)] if len(angles) > 1 else 0
+        for i in range(min(self.bullet_count, len(angles))):
             bullets.append(Bullet(self.x, self.y, target_pos[0], target_pos[1], 
-                                  angle_offset, self.pierce, self.damage_bonus))
+                                  angles[i], self.pierce, self.damage_bonus))
         
         return bullets
 
     def draw(self, screen):
         # Flash when invincible
         if self.invincible_frames > 0 and (pygame.time.get_ticks() % 100) < 50:
-            pygame.draw.circle(screen, (255, 255, 255), (int(self.x), int(self.y)), self.radius)
+            # Draw semi-transparent
+            if self.image:
+                temp_image = self.image.copy()
+                temp_image.set_alpha(128)
+                screen.blit(temp_image, (self.x - self.radius, self.y - self.radius))
+            else:
+                pygame.draw.circle(screen, (255, 255, 255), (int(self.x), int(self.y)), self.radius)
         else:
-            pygame.draw.circle(screen, (0, 255, 0), (int(self.x), int(self.y)), self.radius)
+            if self.image:
+                screen.blit(self.image, (self.x - self.radius, self.y - self.radius))
+            else:
+                pygame.draw.circle(screen, (0, 255, 0), (int(self.x), int(self.y)), self.radius)
         
-        # Health bar
+        # Health bar above player
         bar_width = 40
         bar_height = 6
         health_percent = self.health / self.max_health
-        pygame.draw.rect(screen, (255, 0, 0), (self.x - bar_width//2, self.y - self.radius - 10, bar_width, bar_height))
-        pygame.draw.rect(screen, (0, 255, 0), (self.x - bar_width//2, self.y - self.radius - 10, bar_width * health_percent, bar_height))
+        pygame.draw.rect(screen, (100, 0, 0), (self.x - bar_width//2, self.y - self.radius - 8, bar_width, bar_height))
+        pygame.draw.rect(screen, (0, 255, 0), (self.x - bar_width//2, self.y - self.radius - 8, bar_width * health_percent, bar_height))
         
         # Draw aiming line
         mouse_x, mouse_y = pygame.mouse.get_pos()
