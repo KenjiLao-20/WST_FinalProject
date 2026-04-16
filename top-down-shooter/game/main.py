@@ -37,17 +37,12 @@ def menu():
     while True:
         screen.fill(BLACK)
         
-        # Title animation
-        for i in range(5):
-            alpha = 100 + i * 30
-            draw_text("5 MINUTES TILL DAWN", big_font, (50 + i*40, 255 - i*40, 50), SCREEN_WIDTH//2, 150 - i*2, center=True)
-        
+        draw_text("5 MINUTES TILL DAWN", big_font, YELLOW, SCREEN_WIDTH//2, 150, center=True)
         draw_text("Survive 5 Minutes Against Endless Hordes", font, WHITE, SCREEN_WIDTH//2, 250, center=True)
         draw_text("Every 15 kills = Level Up! Choose a Power-Up", small_font, YELLOW, SCREEN_WIDTH//2, 300, center=True)
-        draw_text("", font, WHITE, SCREEN_WIDTH//2, 350, center=True)
         draw_text("Press SPACE to Start", font, GREEN, SCREEN_WIDTH//2, 400, center=True)
         draw_text("WASD to Move | Mouse to Aim & Shoot", font, WHITE, SCREEN_WIDTH//2, 450, center=True)
-        draw_text("Made by: Lao", small_font, WHITE, SCREEN_WIDTH//2, 550, center=True)
+        draw_text("Unlimited Ammo!", small_font, BLUE, SCREEN_WIDTH//2, 500, center=True)
         
         pygame.display.flip()
 
@@ -62,7 +57,22 @@ def menu():
 def show_level_up_screen(choices):
     """Display power-up selection screen"""
     selected = 0
-    while True:
+    waiting = True
+    
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    selected = (selected - 1) % len(choices)
+                elif event.key == pygame.K_DOWN:
+                    selected = (selected + 1) % len(choices)
+                elif event.key == pygame.K_SPACE:
+                    return selected
+        
+        # Draw the screen
         screen.fill(BLACK)
         
         # Title
@@ -83,18 +93,7 @@ def show_level_up_screen(choices):
         draw_text("↑ ↓ to select | SPACE to confirm", small_font, WHITE, SCREEN_WIDTH//2, 550, center=True)
         
         pygame.display.flip()
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    selected = (selected - 1) % len(choices)
-                elif event.key == pygame.K_DOWN:
-                    selected = (selected + 1) % len(choices)
-                elif event.key == pygame.K_SPACE:
-                    return selected
+        clock.tick(30)  # Limit FPS while in menu
 
 def game_loop():
     # Game variables
@@ -109,19 +108,17 @@ def game_loop():
     
     # Level system
     kills = 0
-    kills_for_next_level = 15
-    level = 1
     exp_needed = 15
+    level = 1
     
     running = True
     paused_for_level_up = False
     
-    # Spawn timers
-    last_spawn_time = 0
-    spawn_delay = 60  # frames between spawns
-    
     # Score
     score = 0
+    
+    # Spawn timer
+    spawn_counter = 0
     
     while running:
         current_time = pygame.time.get_ticks()
@@ -134,34 +131,37 @@ def game_loop():
         if time_left <= 0:
             return "win", score, kills, level
         
-        # Level up check
+        # Level up check (only if not already paused)
         if kills >= exp_needed and not paused_for_level_up:
             paused_for_level_up = True
             level += 1
-            exp_needed += 15  # More kills needed each level
+            exp_needed += 15
             
             # Generate power-up choices
             choices = PowerUpChoice.get_random_choices(3)
             selected = show_level_up_screen(choices)
             choices[selected].apply(player)
+            paused_for_level_up = False  # Resume game after selection
         
-        # Event handling (only if not paused)
+        # Handle events (only if not paused)
         if not paused_for_level_up:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1 and player.can_shoot():
+                    if event.button == 1:  # Left click - unlimited ammo
                         bullets.extend(player.shoot(pygame.mouse.get_pos()))
         
         if not paused_for_level_up:
             # Update player
             player.update()
             
-            # Spawn enemies (increases with time)
-            spawn_rate = max(20, 60 - (time_elapsed // 1000))
-            if len(enemies) < 20 + level * 2 and random.randint(0, spawn_rate) == 0:
+            # Spawn enemies (increases with time and level)
+            spawn_counter += 1
+            spawn_delay = max(15, 45 - (time_elapsed // 2000) - (level * 2))
+            if spawn_counter >= spawn_delay and len(enemies) < 30:
+                spawn_counter = 0
                 enemies.append(Enemy(SCREEN_WIDTH, SCREEN_HEIGHT, player.speed_bonus))
             
             # Update bullets
@@ -170,29 +170,47 @@ def game_loop():
                 if bullet.off_screen(SCREEN_WIDTH, SCREEN_HEIGHT):
                     bullets.remove(bullet)
             
-            # Update enemies
+            # Update enemies and check collisions
             for enemy in enemies[:]:
                 enemy.update(player.x, player.y)
+                
+                # Enemy-player collision
                 if enemy.rect.colliderect(player.rect):
                     if player.take_damage():
                         return "gameover", score, kills, level
                     enemies.remove(enemy)
                     continue
                 
-                # Check bullet collisions
+                # Bullet collisions
                 for bullet in bullets[:]:
                     if bullet.rect.colliderect(enemy.rect):
-                        bullets.remove(bullet)
-                        enemies.remove(enemy)
-                        kills += 1
-                        score += 10
-                        
-                        # Create death particle effect
-                        particles.append({
-                            'x': enemy.x, 'y': enemy.y,
-                            'life': 10, 'color': RED
-                        })
-                        break
+                        # Apply damage
+                        if enemy.take_damage(bullet.damage):
+                            # Enemy dies
+                            enemies.remove(enemy)
+                            kills += 1
+                            score += int(10 * player.score_multiplier)
+                            
+                            # Life steal
+                            if player.lifesteal > 0:
+                                player.heal(player.lifesteal)
+                            
+                            # Death particle
+                            particles.append({
+                                'x': enemy.x, 'y': enemy.y,
+                                'life': 10, 'color': enemy.color
+                            })
+                            
+                            # Reduce pierce
+                            bullet.pierce_left -= 1
+                            if bullet.pierce_left < 0:
+                                bullets.remove(bullet)
+                        else:
+                            # Enemy took damage but didn't die
+                            bullet.pierce_left -= 1
+                            if bullet.pierce_left < 0:
+                                bullets.remove(bullet)
+                        break  # Bullet hit, stop checking this enemy
         
         # Draw everything
         screen.fill(BLACK)
@@ -217,17 +235,18 @@ def game_loop():
         draw_text(f"LEVEL: {level}", font, WHITE, 10, 90)
         draw_text(f"HEALTH: {player.health}", font, RED if player.health < 30 else GREEN, 10, 130)
         draw_text(f"SCORE: {score}", font, YELLOW, 10, 170)
+        draw_text(f"AMMO: UNLIMITED", font, BLUE, 10, 210)
         
         # Show power-ups
-        y_offset = 210
-        for powerup in player.active_powerups:
+        y_offset = 250
+        for powerup in player.active_powerups[-5:]:  # Show last 5
             draw_text(f"✨ {powerup}", small_font, BLUE, 10, y_offset)
             y_offset += 20
         
         # Danger timer visual
         if time_left < 30000:  # Last 30 seconds
-            warning_alpha = (pygame.time.get_ticks() % 500) / 500
-            draw_text("FINAL STAND!", big_font, (255, 100, 100), SCREEN_WIDTH//2, SCREEN_HEIGHT//2, center=True)
+            if (pygame.time.get_ticks() % 500) < 250:
+                draw_text("FINAL STAND!", big_font, RED, SCREEN_WIDTH//2, SCREEN_HEIGHT//2, center=True)
         
         pygame.display.flip()
         clock.tick(60)
@@ -248,7 +267,6 @@ def game_over_screen(result, score, kills, level):
         draw_text(f"Final Score: {score}", font, YELLOW, SCREEN_WIDTH//2, 320, center=True)
         draw_text(f"Total Kills: {kills}", font, WHITE, SCREEN_WIDTH//2, 360, center=True)
         draw_text(f"Level Reached: {level}", font, WHITE, SCREEN_WIDTH//2, 400, center=True)
-        draw_text("", font, WHITE, SCREEN_WIDTH//2, 450, center=True)
         draw_text("Press R to Restart | Q to Quit", font, WHITE, SCREEN_WIDTH//2, 500, center=True)
         
         pygame.display.flip()

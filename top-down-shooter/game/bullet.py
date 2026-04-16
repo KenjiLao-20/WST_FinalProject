@@ -5,8 +5,8 @@ class Bullet:
     def __init__(self, x, y, target_x, target_y, angle_offset=0, pierce=0, damage_bonus=0):
         self.x = x
         self.y = y
-        self.speed = 12
-        self.damage = 25 * (1 + damage_bonus)
+        self.speed = 14
+        self.damage = 1  # Each bullet does 1 damage (red needs 2 hits, blue needs 3)
         self.pierce_left = pierce
         
         # Calculate direction with optional spread
