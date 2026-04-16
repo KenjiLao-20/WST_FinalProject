@@ -6,7 +6,8 @@ class Bullet:
         self.x = x
         self.y = y
         self.speed = 14
-        self.damage = 1  # Each bullet does 1 damage (red needs 2 hits, blue needs 3)
+        # Damage calculation: 1 base damage + bonus (0.5 = +50% = 1.5 damage rounded up to 2)
+        self.damage = max(1, int(1 + damage_bonus))
         self.pierce_left = pierce
         
         # Calculate direction with optional spread
@@ -19,7 +20,6 @@ class Bullet:
         self.vy = math.sin(final_angle) * self.speed
         
         self.radius = 5
-        self.hit_enemies = []
         self.rect = pygame.Rect(x - self.radius, y - self.radius, self.radius * 2, self.radius * 2)
 
     def update(self):
@@ -31,6 +31,8 @@ class Bullet:
         return self.x < -50 or self.x > width + 50 or self.y < -50 or self.y > height + 50
 
     def draw(self, screen):
-        # Glow effect
+        # Glow effect based on damage
+        if self.damage > 2:
+            pygame.draw.circle(screen, (255, 100, 100), (int(self.x), int(self.y)), self.radius + 2)
         pygame.draw.circle(screen, (255, 255, 100), (int(self.x), int(self.y)), self.radius)
         pygame.draw.circle(screen, (255, 200, 0), (int(self.x), int(self.y)), self.radius - 2)
