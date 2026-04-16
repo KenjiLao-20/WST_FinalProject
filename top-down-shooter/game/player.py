@@ -1,5 +1,6 @@
 import pygame
 import math
+import os
 
 class Player:
     def __init__(self, x, y):
@@ -8,7 +9,7 @@ class Player:
         self.base_speed = 5
         self.speed_bonus = 0
         self.speed = self.base_speed
-        self.radius = 20  # For collision detection
+        self.radius = 20
         
         # Health system
         self.max_health = 100
@@ -16,16 +17,16 @@ class Player:
         self.invincible_frames = 0
         self.invincible_duration = 30
         
-        # Shooting stats - UNLIMITED AMMO
+        # Shooting stats
         self.fire_delay = 8
         self.fire_timer = 0
         self.bullet_count = 1
         self.pierce = 0
-        self.damage_bonus = 0
+        self.damage_bonus = 0.0
         
         # Special abilities
         self.exploding_kills = False
-        self.damage_reduction = 0
+        self.damage_reduction = 0.0
         self.lifesteal = 0
         self.invincible_on_hit = False
         self.score_multiplier = 1.0
@@ -34,14 +35,18 @@ class Player:
         self.rect = pygame.Rect(x - self.radius, y - self.radius, self.radius * 2, self.radius * 2)
         
         # Load player image
+        self.image = None
         try:
-            self.image = pygame.image.load("assets/green.png").convert_alpha()
-            # Scale image to appropriate size (40x40 pixels)
-            self.image = pygame.transform.scale(self.image, (40, 40))
-            self.radius = 20  # Half of 40
-        except:
-            print("Warning: Could not load assets/green.png, using circle instead")
-            self.image = None
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            image_path = os.path.join(script_dir, "assets", "green.png")
+            if os.path.exists(image_path):
+                self.image = pygame.image.load(image_path).convert_alpha()
+                self.image = pygame.transform.scale(self.image, (40, 40))
+                print("✓ green.png loaded!")
+            else:
+                print(f"green.png not found at {image_path}, using circle")
+        except Exception as e:
+            print(f"Could not load green.png: {e}, using circle")
 
     def update(self):
         keys = pygame.key.get_pressed()
@@ -55,7 +60,6 @@ class Player:
         self.y = max(self.radius, min(600 - self.radius, self.y))
         self.rect.center = (self.x, self.y)
 
-        # Timers
         if self.fire_timer > 0:
             self.fire_timer -= 1
         
@@ -69,7 +73,8 @@ class Player:
         damage = 20 * (1 - self.damage_reduction)
         self.health -= damage
         
-        self.invincible_frames = self.invincible_duration
+        if self.invincible_on_hit:
+            self.invincible_frames = self.invincible_duration
         
         return self.health <= 0
 
@@ -85,7 +90,6 @@ class Player:
         from bullet import Bullet
         bullets = []
         
-        # Multi-shot spread
         if self.bullet_count == 1:
             angles = [0]
         elif self.bullet_count == 2:
@@ -100,32 +104,28 @@ class Player:
         for i in range(min(self.bullet_count, len(angles))):
             bullets.append(Bullet(self.x, self.y, target_pos[0], target_pos[1], 
                                   angles[i], self.pierce, self.damage_bonus))
-        
         return bullets
 
     def draw(self, screen):
-        # Flash when invincible
-        if self.invincible_frames > 0 and (pygame.time.get_ticks() % 100) < 50:
-            # Draw semi-transparent
-            if self.image:
-                temp_image = self.image.copy()
-                temp_image.set_alpha(128)
-                screen.blit(temp_image, (self.x - self.radius, self.y - self.radius))
+        if self.image:
+            if self.invincible_frames > 0:
+                if (pygame.time.get_ticks() % 100) < 50:
+                    temp_image = self.image.copy()
+                    temp_image.set_alpha(100)
+                    screen.blit(temp_image, (self.x - self.radius, self.y - self.radius))
+                else:
+                    screen.blit(self.image, (self.x - self.radius, self.y - self.radius))
             else:
-                pygame.draw.circle(screen, (255, 255, 255), (int(self.x), int(self.y)), self.radius)
-        else:
-            if self.image:
                 screen.blit(self.image, (self.x - self.radius, self.y - self.radius))
+        else:
+            if self.invincible_frames > 0 and (pygame.time.get_ticks() % 100) < 50:
+                pygame.draw.circle(screen, (200, 200, 200), (int(self.x), int(self.y)), self.radius)
             else:
                 pygame.draw.circle(screen, (0, 255, 0), (int(self.x), int(self.y)), self.radius)
         
-        # Health bar above player
+        # Health bar
         bar_width = 40
         bar_height = 6
         health_percent = self.health / self.max_health
         pygame.draw.rect(screen, (100, 0, 0), (self.x - bar_width//2, self.y - self.radius - 8, bar_width, bar_height))
         pygame.draw.rect(screen, (0, 255, 0), (self.x - bar_width//2, self.y - self.radius - 8, bar_width * health_percent, bar_height))
-        
-        # Draw aiming line
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        pygame.draw.line(screen, (255, 255, 255), (self.x, self.y), (mouse_x, mouse_y), 2)
