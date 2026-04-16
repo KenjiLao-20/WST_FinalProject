@@ -2,6 +2,7 @@ import pygame
 import sys
 import random
 import math
+import os
 from player import Player
 from enemy import Enemy
 from bullet import Bullet
@@ -13,46 +14,130 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("5 Minutes Till Dawn - Top Down Shooter")
 clock = pygame.time.Clock()
-font = pygame.font.Font(None, 28)
-big_font = pygame.font.Font(None, 72)
-small_font = pygame.font.Font(None, 20)
 
-# Load enemy images
-Enemy.load_images()
+# 8-bit style fonts (using default but with pixelated look)
+try:
+    # Try to load a pixel font if available
+    pixel_font = pygame.font.Font("assets/pixel_font.ttf", 24)
+    pixel_font_big = pygame.font.Font("assets/pixel_font.ttf", 48)
+    pixel_font_small = pygame.font.Font("assets/pixel_font.ttf", 16)
+except:
+    # Fallback to default font with pixelated rendering
+    pixel_font = pygame.font.SysFont("couriernew", 24, bold=True)
+    pixel_font_big = pygame.font.SysFont("couriernew", 48, bold=True)
+    pixel_font_small = pygame.font.SysFont("couriernew", 16, bold=True)
+
+# Get the correct path to assets folder
+def get_asset_path(filename):
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    asset_path = os.path.join(script_dir, "assets", filename)
+    return asset_path
+
+# Load enemy images with correct path
+def load_enemy_images():
+    red_path = get_asset_path("red.png")
+    yellow_path = get_asset_path("yellow.png")
+    blue_path = get_asset_path("blue.png")
+    
+    try:
+        Enemy.red_image = pygame.image.load(red_path).convert_alpha()
+        Enemy.red_image = pygame.transform.scale(Enemy.red_image, (32, 32))
+        print("✓ red.png loaded")
+    except:
+        Enemy.red_image = None
+        
+    try:
+        Enemy.yellow_image = pygame.image.load(yellow_path).convert_alpha()
+        Enemy.yellow_image = pygame.transform.scale(Enemy.yellow_image, (24, 24))
+        print("✓ yellow.png loaded")
+    except:
+        Enemy.yellow_image = None
+        
+    try:
+        Enemy.blue_image = pygame.image.load(blue_path).convert_alpha()
+        Enemy.blue_image = pygame.transform.scale(Enemy.blue_image, (40, 40))
+        print("✓ blue.png loaded")
+    except:
+        Enemy.blue_image = None
 
 # Load background images
 title_background = None
 game_background = None
 
+title_path = get_asset_path("title.png")
+bg_path = get_asset_path("background.png")
+
 try:
-    title_background = pygame.image.load("assets/title.png").convert_alpha()
+    title_background = pygame.image.load(title_path).convert_alpha()
     title_background = pygame.transform.scale(title_background, (SCREEN_WIDTH, SCREEN_HEIGHT))
-    print("✓ title.png loaded successfully!")
+    print("✓ title.png loaded!")
 except:
-    print("✗ Could not load assets/title.png - using black background instead")
+    print("title.png not found")
 
 try:
-    game_background = pygame.image.load("assets/background.png").convert_alpha()
+    game_background = pygame.image.load(bg_path).convert_alpha()
     game_background = pygame.transform.scale(game_background, (SCREEN_WIDTH, SCREEN_HEIGHT))
-    print("✓ background.png loaded successfully!")
+    print("✓ background.png loaded!")
 except:
-    print("✗ Could not load assets/background.png - using black background instead")
+    print("background.png not found")
 
-# Colors (for fallback text)
-WHITE = (255, 255, 255)
+# Load enemy images
+load_enemy_images()
+
+# Colors - 8-bit palette
 BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 YELLOW = (255, 255, 0)
-PURPLE = (128, 0, 128)
 BLUE = (0, 100, 255)
 ORANGE = (255, 165, 0)
+PURPLE = (128, 0, 128)
+CYAN = (0, 255, 255)
+DARK_GREEN = (0, 100, 0)
+BROWN = (139, 69, 19)
 
-def draw_text(text, font, color, x, y, center=False):
+def draw_text_8bit(text, font, color, x, y, center=False, shadow=True):
+    """Draw text with 8-bit style (with shadow option)"""
+    if shadow:
+        # Draw shadow
+        shadow_surface = font.render(text, True, BLACK)
+        if center:
+            screen.blit(shadow_surface, (x - shadow_surface.get_width() // 2 + 2, y + 2))
+        else:
+            screen.blit(shadow_surface, (x + 2, y + 2))
+    
+    # Draw main text
     surface = font.render(text, True, color)
     if center:
         x = x - surface.get_width() // 2
     screen.blit(surface, (x, y))
+
+def draw_pixel_border():
+    """Draw an 8-bit style pixel border around the screen"""
+    border_size = 4
+    # Top border
+    pygame.draw.rect(screen, BROWN, (0, 0, SCREEN_WIDTH, border_size))
+    # Bottom border
+    pygame.draw.rect(screen, BROWN, (0, SCREEN_HEIGHT - border_size, SCREEN_WIDTH, border_size))
+    # Left border
+    pygame.draw.rect(screen, BROWN, (0, 0, border_size, SCREEN_HEIGHT))
+    # Right border
+    pygame.draw.rect(screen, BROWN, (SCREEN_WIDTH - border_size, 0, border_size, SCREEN_HEIGHT))
+    
+    # Corner decorations
+    corner_size = 16
+    pygame.draw.rect(screen, DARK_GREEN, (0, 0, corner_size, corner_size))
+    pygame.draw.rect(screen, DARK_GREEN, (SCREEN_WIDTH - corner_size, 0, corner_size, corner_size))
+    pygame.draw.rect(screen, DARK_GREEN, (0, SCREEN_HEIGHT - corner_size, corner_size, corner_size))
+    pygame.draw.rect(screen, DARK_GREEN, (SCREEN_WIDTH - corner_size, SCREEN_HEIGHT - corner_size, corner_size, corner_size))
+
+def draw_pixel_button(x, y, width, height, text, is_selected=False):
+    """Draw an 8-bit style button"""
+    color = YELLOW if is_selected else BROWN
+    pygame.draw.rect(screen, color, (x, y, width, height))
+    pygame.draw.rect(screen, WHITE, (x, y, width, height), 2)
+    draw_text_8bit(text, pixel_font, BLACK if is_selected else WHITE, x + width//2, y + height//2 - 10, center=True, shadow=False)
 
 def menu():
     while True:
@@ -62,21 +147,39 @@ def menu():
         else:
             screen.fill(BLACK)
         
-        # Draw semi-transparent overlay for better text readability
+        # Semi-transparent overlay
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        overlay.set_alpha(128)
+        overlay.set_alpha(180)
         overlay.fill(BLACK)
         screen.blit(overlay, (0, 0))
         
-        # Title text with glow effect
-        draw_text("5 MINUTES TILL DAWN", big_font, YELLOW, SCREEN_WIDTH//2, 150, center=True)
-        draw_text("Survive 5 Minutes Against Endless Hordes", font, WHITE, SCREEN_WIDTH//2, 250, center=True)
-        draw_text("Level 1: 15 kills | Level 2: 25 kills | Level 3: 35 kills | etc", small_font, YELLOW, SCREEN_WIDTH//2, 300, center=True)
-        draw_text("(Kills needed per level, not total)", small_font, WHITE, SCREEN_WIDTH//2, 330, center=True)
-        draw_text("Every level up = Choose a Power-Up!", small_font, GREEN, SCREEN_WIDTH//2, 360, center=True)
-        draw_text("Press SPACE to Start", font, GREEN, SCREEN_WIDTH//2, 450, center=True)
-        draw_text("WASD to Move | Mouse to Aim & Shoot", font, WHITE, SCREEN_WIDTH//2, 500, center=True)
-        draw_text("Unlimited Ammo!", small_font, BLUE, SCREEN_WIDTH//2, 540, center=True)
+        # Draw pixel border
+        draw_pixel_border()
+        
+        # Title with 8-bit style
+        title_y = 150
+        for i, letter in enumerate("5 MINUTES TILL DAWN"):
+            if letter != " ":
+                color = YELLOW if (pygame.time.get_ticks() // 100 + i) % 2 == 0 else ORANGE
+                draw_text_8bit(letter, pixel_font_big, color, SCREEN_WIDTH//2 - 200 + i * 25, title_y, center=False, shadow=True)
+        
+        # Start button
+        button_x = SCREEN_WIDTH//2 - 100
+        button_y = SCREEN_HEIGHT//2 + 50
+        button_width = 200
+        button_height = 50
+        
+        mouse_pos = pygame.mouse.get_pos()
+        is_hover = (button_x < mouse_pos[0] < button_x + button_width and 
+                    button_y < mouse_pos[1] < button_y + button_height)
+        
+        draw_pixel_button(button_x, button_y, button_width, button_height, "START GAME", is_hover)
+        
+        # Controls text
+        controls_y = SCREEN_HEIGHT - 100
+        draw_text_8bit("WASD = MOVE", pixel_font, CYAN, SCREEN_WIDTH//2 - 150, controls_y, center=False)
+        draw_text_8bit("MOUSE = AIM", pixel_font, CYAN, SCREEN_WIDTH//2 - 20, controls_y, center=False)
+        draw_text_8bit("LEFT CLICK = SHOOT", pixel_font, CYAN, SCREEN_WIDTH//2 + 110, controls_y, center=False)
         
         pygame.display.flip()
 
@@ -86,6 +189,9 @@ def menu():
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
+                    return
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1 and is_hover:
                     return
 
 def show_level_up_screen(choices, current_level, kills_needed_for_next):
@@ -106,60 +212,54 @@ def show_level_up_screen(choices, current_level, kills_needed_for_next):
                 elif event.key == pygame.K_SPACE:
                     return selected
         
-        # Draw the screen
+        # Draw background
         if game_background:
             screen.blit(game_background, (0, 0))
         else:
             screen.fill(BLACK)
         
-        # Semi-transparent overlay for level up screen
+        # Overlay
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         overlay.set_alpha(180)
         overlay.fill(BLACK)
         screen.blit(overlay, (0, 0))
         
+        draw_pixel_border()
+        
         # Title
-        draw_text(f"LEVEL {current_level} COMPLETE!", big_font, YELLOW, SCREEN_WIDTH//2, 80, center=True)
-        draw_text(f"Reached Level {current_level + 1}!", font, GREEN, SCREEN_WIDTH//2, 150, center=True)
-        draw_text(f"Next level needs {kills_needed_for_next} kills", small_font, WHITE, SCREEN_WIDTH//2, 190, center=True)
-        draw_text("Choose your power-up:", font, WHITE, SCREEN_WIDTH//2, 240, center=True)
+        draw_text_8bit(f"LEVEL {current_level} UP!", pixel_font_big, YELLOW, SCREEN_WIDTH//2, 80, center=True)
+        draw_text_8bit("CHOOSE YOUR POWER", pixel_font, CYAN, SCREEN_WIDTH//2, 150, center=True)
         
         # Display choices
         for i, choice in enumerate(choices):
-            y_pos = 300 + i * 90
+            y_pos = 220 + i * 100
             color = GREEN if selected == i else WHITE
-            box_rect = pygame.Rect(150, y_pos - 25, 500, 60)
-            pygame.draw.rect(screen, (50, 50, 80), box_rect, border_radius=10)
-            pygame.draw.rect(screen, color, box_rect, 2, border_radius=10)
+            box_rect = pygame.Rect(150, y_pos - 20, 500, 70)
+            pygame.draw.rect(screen, (50, 50, 80), box_rect, border_radius=5)
+            pygame.draw.rect(screen, color, box_rect, 2, border_radius=5)
             
-            draw_text(choice.name, font, color, SCREEN_WIDTH//2, y_pos, center=True)
-            draw_text(choice.description, small_font, YELLOW, SCREEN_WIDTH//2, y_pos + 28, center=True)
+            draw_text_8bit(choice.name, pixel_font, color, SCREEN_WIDTH//2, y_pos, center=True)
+            draw_text_8bit(choice.description, pixel_font_small, YELLOW, SCREEN_WIDTH//2, y_pos + 30, center=True)
         
-        draw_text("↑ ↓ to select | SPACE to confirm", small_font, WHITE, SCREEN_WIDTH//2, 550, center=True)
+        draw_text_8bit("UP/DOWN  |  SPACE", pixel_font_small, WHITE, SCREEN_WIDTH//2, 550, center=True)
         
         pygame.display.flip()
         clock.tick(30)
 
 def game_loop():
-    # Game variables
     player = Player(SCREEN_WIDTH//2, SCREEN_HEIGHT//2)
     enemies = []
     bullets = []
     particles = []
     
-    # Survival timers
     start_time = pygame.time.get_ticks()
-    survival_duration = 5 * 60 * 1000  # 5 minutes in milliseconds
+    survival_duration = 5 * 60 * 1000
     
-    # Level system - PER LEVEL kills needed (not cumulative)
     total_kills = 0
-    kills_this_level = 0  # Kills since last level up
+    kills_this_level = 0
     level = 1
-    
-    # Kills needed for CURRENT level to advance
     kills_needed_for_current_level = 15 + (level - 1) * 10
     
-    # Difficulty scaling based on time
     last_minute_check = 0
     current_difficulty_minute = 0
     
@@ -167,10 +267,7 @@ def game_loop():
     paused_for_level_up = False
     level_up_selection_active = False
     
-    # Score
     score = 0
-    
-    # Spawn timer
     spawn_counter = 0
     
     while running:
@@ -181,17 +278,14 @@ def game_loop():
         seconds_left = (time_left % 60000) // 1000
         minutes_passed = (survival_duration - time_left) // 60000
         
-        # Check if a new minute has passed for difficulty increase
         if minutes_passed > last_minute_check:
             last_minute_check = minutes_passed
             current_difficulty_minute = minutes_passed
             Enemy.update_difficulty(current_difficulty_minute)
         
-        # Check win condition
         if time_left <= 0:
             return "win", score, total_kills, level
         
-        # Level up check - using kills THIS LEVEL only
         if kills_this_level >= kills_needed_for_current_level and not paused_for_level_up and not level_up_selection_active:
             paused_for_level_up = True
             level_up_selection_active = True
@@ -200,28 +294,20 @@ def game_loop():
             choices = PowerUpChoice.get_random_choices(3)
             selected = show_level_up_screen(choices, level, next_level_kills_needed)
             
-            # Apply the selected power-up
             try:
                 choices[selected].apply(player)
             except Exception as e:
-                print(f"Error applying power-up: {e}")
                 player.health = min(player.max_health, player.health + 20)
             
-            # Increase level
             level += 1
-            
-            # Reset kills_this_level (overflow carries over)
             overflow_kills = kills_this_level - kills_needed_for_current_level
             kills_this_level = overflow_kills if overflow_kills > 0 else 0
-            
-            # Update kills needed for NEW level
             kills_needed_for_current_level = 15 + (level - 1) * 10
             
             paused_for_level_up = False
             level_up_selection_active = False
             continue
         
-        # Handle events
         if not paused_for_level_up:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -234,10 +320,8 @@ def game_loop():
         if not paused_for_level_up:
             player.update()
             
-            # Dynamic spawn delay
             base_spawn_delay = max(8, 45 - (minutes_passed * 3) - (level // 2))
             spawn_counter += 1
-            
             max_enemies = min(50, 20 + minutes_passed * 3 + level)
             
             if spawn_counter >= base_spawn_delay and len(enemies) < max_enemies:
@@ -251,13 +335,11 @@ def game_loop():
                 for _ in range(enemies_to_spawn):
                     enemies.append(Enemy(SCREEN_WIDTH, SCREEN_HEIGHT, player.speed_bonus, current_difficulty_minute))
             
-            # Update bullets
             for bullet in bullets[:]:
                 bullet.update()
                 if bullet.off_screen(SCREEN_WIDTH, SCREEN_HEIGHT):
                     bullets.remove(bullet)
             
-            # Update enemies and check collisions
             for enemy in enemies[:]:
                 enemy.update(player.x, player.y)
                 
@@ -281,7 +363,6 @@ def game_loop():
                                 base_score = 15
                             score += int(base_score * player.score_multiplier)
                             
-                            # Life steal heal
                             if player.lifesteal > 0:
                                 player.heal(player.lifesteal)
                             
@@ -299,7 +380,7 @@ def game_loop():
                                 bullets.remove(bullet)
                         break
         
-        # Draw everything - with game background
+        # Draw everything
         if game_background:
             screen.blit(game_background, (0, 0))
         else:
@@ -319,60 +400,45 @@ def game_loop():
             enemy.draw(screen)
         player.draw(screen)
         
-        # Semi-transparent UI background for better text visibility
-        ui_panel = pygame.Surface((250, 130))
-        ui_panel.set_alpha(180)
-        ui_panel.fill(BLACK)
-        screen.blit(ui_panel, (0, 0))
+        draw_pixel_border()
         
-        # CLEAN UI - Top left corner, compact
+        # UI - Top left
         kills_left = kills_needed_for_current_level - kills_this_level
         if kills_left < 0:
             kills_left = 0
-            
-        # Line 1: Time and Kills to level up
-        draw_text(f"TIME: {minutes_left}:{seconds_left:02d}  |  {kills_left} kills to level up", font, WHITE, 10, 10)
         
-        # Line 2: Total kills and Score
-        draw_text(f"TOTAL KILLS: {total_kills}  |  SCORE: {score}", font, WHITE, 10, 40)
+        # Time display
+        time_text = f"{minutes_left:02d}:{seconds_left:02d}"
+        draw_text_8bit(time_text, pixel_font_big, YELLOW, 15, 10, shadow=True)
         
-        # Line 3: Health bar (visual only)
+        # Kills to level
+        draw_text_8bit(f"KILLS: {kills_left}", pixel_font, CYAN, 15, 60, shadow=True)
+        
+        # Score
+        draw_text_8bit(f"SCORE: {score}", pixel_font, WHITE, 15, 90, shadow=True)
+        
+        # Health bar with pixel style
         health_percent = player.health / player.max_health
         bar_width = 150
         bar_height = 12
-        pygame.draw.rect(screen, (100, 0, 0), (10, 65, bar_width, bar_height))
-        pygame.draw.rect(screen, (0, 255, 0), (10, 65, bar_width * health_percent, bar_height))
-        draw_text(f"HEALTH: {int(player.health)}/{int(player.max_health)}", small_font, WHITE, 10, 80)
+        pygame.draw.rect(screen, (100, 0, 0), (15, 120, bar_width, bar_height))
+        pygame.draw.rect(screen, (0, 255, 0), (15, 120, bar_width * health_percent, bar_height))
+        pygame.draw.rect(screen, WHITE, (15, 120, bar_width, bar_height), 1)
+        draw_text_8bit(f"HP: {int(player.health)}/{int(player.max_health)}", pixel_font_small, WHITE, 15, 137, shadow=True)
         
-        # Show active power-ups (compact row at bottom of screen)
+        # Power-ups display at bottom
         if player.active_powerups:
-            powerup_text = " | ".join(player.active_powerups[-3:])
-            # Add semi-transparent background for power-up text
-            power_bg = pygame.Surface((300, 25))
-            power_bg.set_alpha(180)
-            power_bg.fill(BLACK)
-            screen.blit(power_bg, (5, SCREEN_HEIGHT - 30))
-            draw_text(f"POWER-UPS: {powerup_text}", small_font, BLUE, 10, SCREEN_HEIGHT - 25)
+            power_text = " > ".join(player.active_powerups[-3:])
+            draw_text_8bit(power_text, pixel_font_small, BLUE, SCREEN_WIDTH//2, SCREEN_HEIGHT - 30, center=True, shadow=True)
         
-        # Difficulty indicator (top right)
-        difficulty_color = GREEN
-        if minutes_passed >= 3:
-            difficulty_color = YELLOW
-        if minutes_passed >= 4:
-            difficulty_color = ORANGE
-        if minutes_passed >= 4.5:
-            difficulty_color = RED
-        draw_text(f"DIFFICULTY: {current_difficulty_minute}/5", small_font, difficulty_color, SCREEN_WIDTH - 100, 10)
+        # Difficulty meter (top right)
+        difficulty_color = [GREEN, YELLOW, ORANGE, RED][min(current_difficulty_minute, 3)]
+        draw_text_8bit(f"DIFF {current_difficulty_minute}/5", pixel_font_small, difficulty_color, SCREEN_WIDTH - 80, 15, shadow=True)
         
-        # Danger timer visual
+        # Danger warning
         if time_left < 30000:
             if (pygame.time.get_ticks() % 500) < 250:
-                draw_text("FINAL STAND!", big_font, RED, SCREEN_WIDTH//2, SCREEN_HEIGHT//2, center=True)
-        
-        # Difficulty warning
-        if minutes_passed >= 4:
-            if (pygame.time.get_ticks() % 1000) < 500:
-                draw_text("⚠️ MAXIMUM DIFFICULTY ⚠️", small_font, RED, SCREEN_WIDTH//2, SCREEN_HEIGHT - 50, center=True)
+                draw_text_8bit("!!! FINAL STAND !!!", pixel_font, RED, SCREEN_WIDTH//2, SCREEN_HEIGHT//2, center=True, shadow=True)
         
         pygame.display.flip()
         clock.tick(60)
@@ -381,29 +447,42 @@ def game_loop():
 
 def game_over_screen(result, score, kills, level):
     while True:
-        # Draw background
         if game_background:
             screen.blit(game_background, (0, 0))
         else:
             screen.fill(BLACK)
         
-        # Semi-transparent overlay
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         overlay.set_alpha(180)
         overlay.fill(BLACK)
         screen.blit(overlay, (0, 0))
         
-        if result == "win":
-            draw_text("VICTORY!", big_font, GREEN, SCREEN_WIDTH//2, 150, center=True)
-            draw_text("You survived 5 minutes!", font, WHITE, SCREEN_WIDTH//2, 250, center=True)
-        else:
-            draw_text("GAME OVER", big_font, RED, SCREEN_WIDTH//2, 150, center=True)
-            draw_text("The darkness consumed you...", font, WHITE, SCREEN_WIDTH//2, 250, center=True)
+        draw_pixel_border()
         
-        draw_text(f"Final Score: {score}", font, YELLOW, SCREEN_WIDTH//2, 320, center=True)
-        draw_text(f"Total Kills: {kills}", font, WHITE, SCREEN_WIDTH//2, 360, center=True)
-        draw_text(f"Level Reached: {level}", font, WHITE, SCREEN_WIDTH//2, 400, center=True)
-        draw_text("Press R to Restart | Q to Quit", font, WHITE, SCREEN_WIDTH//2, 500, center=True)
+        if result == "win":
+            draw_text_8bit("VICTORY!", pixel_font_big, GREEN, SCREEN_WIDTH//2, 150, center=True)
+            draw_text_8bit("YOU SURVIVED!", pixel_font, CYAN, SCREEN_WIDTH//2, 220, center=True)
+        else:
+            draw_text_8bit("GAME OVER", pixel_font_big, RED, SCREEN_WIDTH//2, 150, center=True)
+            draw_text_8bit("THE DARKNESS WON", pixel_font, YELLOW, SCREEN_WIDTH//2, 220, center=True)
+        
+        draw_text_8bit(f"SCORE: {score}", pixel_font, WHITE, SCREEN_WIDTH//2, 320, center=True)
+        draw_text_8bit(f"KILLS: {kills}", pixel_font, WHITE, SCREEN_WIDTH//2, 360, center=True)
+        draw_text_8bit(f"LEVEL: {level}", pixel_font, WHITE, SCREEN_WIDTH//2, 400, center=True)
+        
+        # Restart button
+        button_x = SCREEN_WIDTH//2 - 100
+        button_y = SCREEN_HEIGHT//2 + 100
+        button_width = 200
+        button_height = 50
+        
+        mouse_pos = pygame.mouse.get_pos()
+        is_hover = (button_x < mouse_pos[0] < button_x + button_width and 
+                    button_y < mouse_pos[1] < button_y + button_height)
+        
+        draw_pixel_button(button_x, button_y, button_width, button_height, "RESTART", is_hover)
+        
+        draw_text_8bit("OR PRESS 'R' KEY", pixel_font_small, WHITE, SCREEN_WIDTH//2, button_y + 70, center=True)
         
         pygame.display.flip()
 
@@ -417,6 +496,9 @@ def game_over_screen(result, score, kills, level):
                 if event.key == pygame.K_q:
                     pygame.quit()
                     sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1 and is_hover:
+                    return True
 
 def main():
     while True:
