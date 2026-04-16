@@ -10,19 +10,18 @@ from powerup import PowerUp, PowerUpChoice
 
 # Initialize
 pygame.init()
+pygame.mixer.init()  # Initialize sound mixer
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("5 Minutes Till Dawn - Top Down Shooter")
 clock = pygame.time.Clock()
 
-# 8-bit style fonts (using default but with pixelated look)
+# 8-bit style fonts
 try:
-    # Try to load a pixel font if available
     pixel_font = pygame.font.Font("assets/pixel_font.ttf", 24)
     pixel_font_big = pygame.font.Font("assets/pixel_font.ttf", 48)
     pixel_font_small = pygame.font.Font("assets/pixel_font.ttf", 16)
 except:
-    # Fallback to default font with pixelated rendering
     pixel_font = pygame.font.SysFont("couriernew", 24, bold=True)
     pixel_font_big = pygame.font.SysFont("couriernew", 48, bold=True)
     pixel_font_small = pygame.font.SysFont("couriernew", 16, bold=True)
@@ -33,7 +32,49 @@ def get_asset_path(filename):
     asset_path = os.path.join(script_dir, "assets", filename)
     return asset_path
 
-# Load enemy images with correct path
+# Load sounds
+shoot_sound = None
+powerup_sound = None
+gameover_sound = None
+soundtrack = None
+soundtrack2 = None
+
+try:
+    shoot_sound = pygame.mixer.Sound(get_asset_path("shoot.mp3"))
+    shoot_sound.set_volume(0.5)
+    print("✓ shoot.mp3 loaded")
+except:
+    print("✗ Could not load shoot.mp3")
+
+try:
+    powerup_sound = pygame.mixer.Sound(get_asset_path("powerup.mp3"))
+    powerup_sound.set_volume(0.6)
+    print("✓ powerup.mp3 loaded")
+except:
+    print("✗ Could not load powerup.mp3")
+
+try:
+    gameover_sound = pygame.mixer.Sound(get_asset_path("gameover.mp3"))
+    gameover_sound.set_volume(0.7)
+    print("✓ gameover.mp3 loaded")
+except:
+    print("✗ Could not load gameover.mp3")
+
+try:
+    soundtrack = pygame.mixer.Sound(get_asset_path("soundtrack.mp3"))
+    soundtrack.set_volume(0.4)
+    print("✓ soundtrack.mp3 loaded")
+except:
+    print("✗ Could not load soundtrack.mp3")
+
+try:
+    soundtrack2 = pygame.mixer.Sound(get_asset_path("soundtrack2.mp3"))
+    soundtrack2.set_volume(0.4)
+    print("✓ soundtrack2.mp3 loaded")
+except:
+    print("✗ Could not load soundtrack2.mp3")
+
+# Load enemy images
 def load_enemy_images():
     red_path = get_asset_path("red.png")
     yellow_path = get_asset_path("yellow.png")
@@ -94,52 +135,33 @@ BLUE = (0, 100, 255)
 ORANGE = (255, 165, 0)
 PURPLE = (128, 0, 128)
 CYAN = (0, 255, 255)
-DARK_GREEN = (0, 100, 0)
-BROWN = (139, 69, 19)
 
 def draw_text_8bit(text, font, color, x, y, center=False, shadow=True):
     """Draw text with 8-bit style (with shadow option)"""
     if shadow:
-        # Draw shadow
         shadow_surface = font.render(text, True, BLACK)
         if center:
             screen.blit(shadow_surface, (x - shadow_surface.get_width() // 2 + 2, y + 2))
         else:
             screen.blit(shadow_surface, (x + 2, y + 2))
     
-    # Draw main text
     surface = font.render(text, True, color)
     if center:
         x = x - surface.get_width() // 2
     screen.blit(surface, (x, y))
 
-def draw_pixel_border():
-    """Draw an 8-bit style pixel border around the screen"""
-    border_size = 4
-    # Top border
-    pygame.draw.rect(screen, BROWN, (0, 0, SCREEN_WIDTH, border_size))
-    # Bottom border
-    pygame.draw.rect(screen, BROWN, (0, SCREEN_HEIGHT - border_size, SCREEN_WIDTH, border_size))
-    # Left border
-    pygame.draw.rect(screen, BROWN, (0, 0, border_size, SCREEN_HEIGHT))
-    # Right border
-    pygame.draw.rect(screen, BROWN, (SCREEN_WIDTH - border_size, 0, border_size, SCREEN_HEIGHT))
-    
-    # Corner decorations
-    corner_size = 16
-    pygame.draw.rect(screen, DARK_GREEN, (0, 0, corner_size, corner_size))
-    pygame.draw.rect(screen, DARK_GREEN, (SCREEN_WIDTH - corner_size, 0, corner_size, corner_size))
-    pygame.draw.rect(screen, DARK_GREEN, (0, SCREEN_HEIGHT - corner_size, corner_size, corner_size))
-    pygame.draw.rect(screen, DARK_GREEN, (SCREEN_WIDTH - corner_size, SCREEN_HEIGHT - corner_size, corner_size, corner_size))
-
 def draw_pixel_button(x, y, width, height, text, is_selected=False):
     """Draw an 8-bit style button"""
-    color = YELLOW if is_selected else BROWN
+    color = YELLOW if is_selected else (100, 100, 100)
     pygame.draw.rect(screen, color, (x, y, width, height))
     pygame.draw.rect(screen, WHITE, (x, y, width, height), 2)
     draw_text_8bit(text, pixel_font, BLACK if is_selected else WHITE, x + width//2, y + height//2 - 10, center=True, shadow=False)
 
 def menu():
+    # Play title soundtrack (loop continuously)
+    if soundtrack:
+        soundtrack.play(loops=-1)
+    
     while True:
         # Draw background
         if title_background:
@@ -147,25 +169,15 @@ def menu():
         else:
             screen.fill(BLACK)
         
-        # Semi-transparent overlay
+        # Semi-transparent overlay for better text visibility
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        overlay.set_alpha(180)
+        overlay.set_alpha(128)
         overlay.fill(BLACK)
         screen.blit(overlay, (0, 0))
         
-        # Draw pixel border
-        draw_pixel_border()
-        
-        # Title with 8-bit style
-        title_y = 150
-        for i, letter in enumerate("5 MINUTES TILL DAWN"):
-            if letter != " ":
-                color = YELLOW if (pygame.time.get_ticks() // 100 + i) % 2 == 0 else ORANGE
-                draw_text_8bit(letter, pixel_font_big, color, SCREEN_WIDTH//2 - 200 + i * 25, title_y, center=False, shadow=True)
-        
         # Start button
         button_x = SCREEN_WIDTH//2 - 100
-        button_y = SCREEN_HEIGHT//2 + 50
+        button_y = SCREEN_HEIGHT//2
         button_width = 200
         button_height = 50
         
@@ -175,11 +187,14 @@ def menu():
         
         draw_pixel_button(button_x, button_y, button_width, button_height, "START GAME", is_hover)
         
-        # Controls text
-        controls_y = SCREEN_HEIGHT - 100
-        draw_text_8bit("WASD = MOVE", pixel_font, CYAN, SCREEN_WIDTH//2 - 150, controls_y, center=False)
-        draw_text_8bit("MOUSE = AIM", pixel_font, CYAN, SCREEN_WIDTH//2 - 20, controls_y, center=False)
-        draw_text_8bit("LEFT CLICK = SHOOT", pixel_font, CYAN, SCREEN_WIDTH//2 + 110, controls_y, center=False)
+        # Controls text - centered and aligned
+        controls_y = SCREEN_HEIGHT - 120
+        draw_text_8bit("CONTROLS:", pixel_font, YELLOW, SCREEN_WIDTH//2, controls_y, center=True)
+        
+        control_y_offset = controls_y + 35
+        draw_text_8bit("MOVE: WASD", pixel_font, CYAN, SCREEN_WIDTH//2 - 150, control_y_offset, center=False)
+        draw_text_8bit("AIM: MOUSE", pixel_font, CYAN, SCREEN_WIDTH//2 - 150, control_y_offset + 30, center=False)
+        draw_text_8bit("SHOOT: LEFT CLICK", pixel_font, CYAN, SCREEN_WIDTH//2 - 150, control_y_offset + 60, center=False)
         
         pygame.display.flip()
 
@@ -189,13 +204,23 @@ def menu():
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
+                    # Stop title soundtrack and start game soundtrack
+                    if soundtrack:
+                        soundtrack.stop()
                     return
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1 and is_hover:
+                    # Stop title soundtrack and start game soundtrack
+                    if soundtrack:
+                        soundtrack.stop()
                     return
 
 def show_level_up_screen(choices, current_level, kills_needed_for_next):
     """Display power-up selection screen"""
+    # Play powerup sound
+    if powerup_sound:
+        powerup_sound.play()
+    
     selected = 0
     waiting = True
     
@@ -224,8 +249,6 @@ def show_level_up_screen(choices, current_level, kills_needed_for_next):
         overlay.fill(BLACK)
         screen.blit(overlay, (0, 0))
         
-        draw_pixel_border()
-        
         # Title
         draw_text_8bit(f"LEVEL {current_level} UP!", pixel_font_big, YELLOW, SCREEN_WIDTH//2, 80, center=True)
         draw_text_8bit("CHOOSE YOUR POWER", pixel_font, CYAN, SCREEN_WIDTH//2, 150, center=True)
@@ -247,6 +270,10 @@ def show_level_up_screen(choices, current_level, kills_needed_for_next):
         clock.tick(30)
 
 def game_loop():
+    # Play game soundtrack (loop continuously)
+    if soundtrack2:
+        soundtrack2.play(loops=-1)
+    
     player = Player(SCREEN_WIDTH//2, SCREEN_HEIGHT//2)
     enemies = []
     bullets = []
@@ -270,6 +297,9 @@ def game_loop():
     score = 0
     spawn_counter = 0
     
+    # Variable to track if shoot sound is playing
+    last_shot_time = 0
+    
     while running:
         current_time = pygame.time.get_ticks()
         time_elapsed = current_time - start_time
@@ -284,6 +314,9 @@ def game_loop():
             Enemy.update_difficulty(current_difficulty_minute)
         
         if time_left <= 0:
+            # Stop game soundtrack on win
+            if soundtrack2:
+                soundtrack2.stop()
             return "win", score, total_kills, level
         
         if kills_this_level >= kills_needed_for_current_level and not paused_for_level_up and not level_up_selection_active:
@@ -315,6 +348,9 @@ def game_loop():
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
+                        # Play shoot sound
+                        if shoot_sound:
+                            shoot_sound.play()
                         bullets.extend(player.shoot(pygame.mouse.get_pos()))
         
         if not paused_for_level_up:
@@ -345,6 +381,9 @@ def game_loop():
                 
                 if enemy.rect.colliderect(player.rect):
                     if player.take_damage():
+                        # Stop game soundtrack on death
+                        if soundtrack2:
+                            soundtrack2.stop()
                         return "gameover", score, total_kills, level
                     enemies.remove(enemy)
                     continue
@@ -400,8 +439,6 @@ def game_loop():
             enemy.draw(screen)
         player.draw(screen)
         
-        draw_pixel_border()
-        
         # UI - Top left
         kills_left = kills_needed_for_current_level - kills_this_level
         if kills_left < 0:
@@ -417,7 +454,7 @@ def game_loop():
         # Score
         draw_text_8bit(f"SCORE: {score}", pixel_font, WHITE, 15, 90, shadow=True)
         
-        # Health bar with pixel style
+        # Health bar
         health_percent = player.health / player.max_health
         bar_width = 150
         bar_height = 12
@@ -446,6 +483,10 @@ def game_loop():
     return "gameover", score, total_kills, level
 
 def game_over_screen(result, score, kills, level):
+    # Play game over sound
+    if gameover_sound:
+        gameover_sound.play()
+    
     while True:
         if game_background:
             screen.blit(game_background, (0, 0))
@@ -456,8 +497,6 @@ def game_over_screen(result, score, kills, level):
         overlay.set_alpha(180)
         overlay.fill(BLACK)
         screen.blit(overlay, (0, 0))
-        
-        draw_pixel_border()
         
         if result == "win":
             draw_text_8bit("VICTORY!", pixel_font_big, GREEN, SCREEN_WIDTH//2, 150, center=True)
