@@ -2,19 +2,24 @@ import pygame
 import math
 
 class Bullet:
-    def __init__(self, x, y, target_x, target_y):
+    def __init__(self, x, y, target_x, target_y, angle_offset=0, pierce=0, damage_bonus=0):
         self.x = x
         self.y = y
-        self.speed = 10
+        self.speed = 12
+        self.damage = 25 * (1 + damage_bonus)
+        self.pierce_left = pierce
+        
+        # Calculate direction with optional spread
         dx = target_x - x
         dy = target_y - y
-        dist = math.hypot(dx, dy)
-        if dist != 0:
-            self.vx = dx / dist * self.speed
-            self.vy = dy / dist * self.speed
-        else:
-            self.vx = self.vy = 0
-        self.radius = 4
+        base_angle = math.atan2(dy, dx)
+        final_angle = base_angle + angle_offset
+        
+        self.vx = math.cos(final_angle) * self.speed
+        self.vy = math.sin(final_angle) * self.speed
+        
+        self.radius = 5
+        self.hit_enemies = []
         self.rect = pygame.Rect(x - self.radius, y - self.radius, self.radius * 2, self.radius * 2)
 
     def update(self):
@@ -26,4 +31,6 @@ class Bullet:
         return self.x < -50 or self.x > width + 50 or self.y < -50 or self.y > height + 50
 
     def draw(self, screen):
-        pygame.draw.circle(screen, (255, 255, 0), (int(self.x), int(self.y)), self.radius)
+        # Glow effect
+        pygame.draw.circle(screen, (255, 255, 100), (int(self.x), int(self.y)), self.radius)
+        pygame.draw.circle(screen, (255, 200, 0), (int(self.x), int(self.y)), self.radius - 2)
