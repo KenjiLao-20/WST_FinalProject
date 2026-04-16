@@ -39,7 +39,8 @@ def menu():
         
         draw_text("5 MINUTES TILL DAWN", big_font, YELLOW, SCREEN_WIDTH//2, 150, center=True)
         draw_text("Survive 5 Minutes Against Endless Hordes", font, WHITE, SCREEN_WIDTH//2, 250, center=True)
-        draw_text("Every 15 kills = Level Up! Choose a Power-Up", small_font, YELLOW, SCREEN_WIDTH//2, 300, center=True)
+        draw_text("Every 15/25/35+ kills = Level Up! Choose a Power-Up", small_font, YELLOW, SCREEN_WIDTH//2, 300, center=True)
+        draw_text("Enemies get stronger every minute!", small_font, RED, SCREEN_WIDTH//2, 330, center=True)
         draw_text("Press SPACE to Start", font, GREEN, SCREEN_WIDTH//2, 400, center=True)
         draw_text("WASD to Move | Mouse to Aim & Shoot", font, WHITE, SCREEN_WIDTH//2, 450, center=True)
         draw_text("Unlimited Ammo!", small_font, BLUE, SCREEN_WIDTH//2, 500, center=True)
@@ -93,7 +94,7 @@ def show_level_up_screen(choices):
         draw_text("↑ ↓ to select | SPACE to confirm", small_font, WHITE, SCREEN_WIDTH//2, 550, center=True)
         
         pygame.display.flip()
-        clock.tick(30)  # Limit FPS while in menu
+        clock.tick(30)
 
 def game_loop():
     # Game variables
@@ -106,13 +107,19 @@ def game_loop():
     start_time = pygame.time.get_ticks()
     survival_duration = 5 * 60 * 1000  # 5 minutes in milliseconds
     
-    # Level system
+    # Level system - Progressive kill requirement
     kills = 0
-    exp_needed = 15
+    base_exp_needed = 15
+    exp_needed = base_exp_needed  # Start at 15
     level = 1
+    
+    # Difficulty scaling based on time
+    last_minute_check = 0
+    current_difficulty_minute = 0
     
     running = True
     paused_for_level_up = False
+    level_up_selection_active = False
     
     # Score
     score = 0
@@ -126,22 +133,43 @@ def game_loop():
         time_left = max(0, survival_duration - time_elapsed)
         minutes_left = time_left // 60000
         seconds_left = (time_left % 60000) // 1000
+        minutes_passed = (survival_duration - time_left) // 60000
+        
+        # Check if a new minute has passed for difficulty increase
+        if minutes_passed > last_minute_check:
+            last_minute_check = minutes_passed
+            current_difficulty_minute = minutes_passed
+            # Update enemy stats globally when minute changes
+            Enemy.update_difficulty(current_difficulty_minute)
         
         # Check win condition
         if time_left <= 0:
             return "win", score, kills, level
         
-        # Level up check (only if not already paused)
-        if kills >= exp_needed and not paused_for_level_up:
+        # Level up check - Progressive kill requirement
+        if kills >= exp_needed and not paused_for_level_up and not level_up_selection_active:
             paused_for_level_up = True
+            level_up_selection_active = True
             level += 1
-            exp_needed += 15
+            
+            # Increase kill requirement by 10 each level (15, 25, 35, 45, etc.)
+            exp_needed = base_exp_needed + (level - 1) * 10
             
             # Generate power-up choices
             choices = PowerUpChoice.get_random_choices(3)
             selected = show_level_up_screen(choices)
-            choices[selected].apply(player)
-            paused_for_level_up = False  # Resume game after selection
+            
+            # Apply the selected power-up with error handling
+            try:
+                choices[selected].apply(player)
+            except Exception as e:
+                print(f"Error applying power-up: {e}")
+                # Fallback: just give health boost if error occurs
+                player.health = min(player.max_health, player.health + 20)
+            
+            paused_for_level_up = False
+            level_up_selection_active = False
+            continue
         
         # Handle events (only if not paused)
         if not paused_for_level_up:
@@ -157,12 +185,25 @@ def game_loop():
             # Update player
             player.update()
             
-            # Spawn enemies (increases with time and level)
+            # Dynamic spawn delay - gets faster as time progresses and level increases
+            # Starts at 45, minimum 8 frames between spawns
+            base_spawn_delay = max(8, 45 - (minutes_passed * 3) - (level // 2))
             spawn_counter += 1
-            spawn_delay = max(15, 45 - (time_elapsed // 2000) - (level * 2))
-            if spawn_counter >= spawn_delay and len(enemies) < 30:
+            
+            # Max enemies increases with difficulty
+            max_enemies = min(50, 20 + minutes_passed * 3 + level)
+            
+            if spawn_counter >= base_spawn_delay and len(enemies) < max_enemies:
                 spawn_counter = 0
-                enemies.append(Enemy(SCREEN_WIDTH, SCREEN_HEIGHT, player.speed_bonus))
+                # Spawn multiple enemies at higher difficulty
+                enemies_to_spawn = 1
+                if minutes_passed >= 3:
+                    enemies_to_spawn = random.randint(1, 2)
+                if minutes_passed >= 4:
+                    enemies_to_spawn = random.randint(1, 3)
+                
+                for _ in range(enemies_to_spawn):
+                    enemies.append(Enemy(SCREEN_WIDTH, SCREEN_HEIGHT, player.speed_bonus, current_difficulty_minute))
             
             # Update bullets
             for bullet in bullets[:]:
@@ -189,7 +230,13 @@ def game_loop():
                             # Enemy dies
                             enemies.remove(enemy)
                             kills += 1
-                            score += int(10 * player.score_multiplier)
+                            # Score based on enemy type and difficulty
+                            base_score = 10
+                            if enemy.type == 'tank':
+                                base_score = 25
+                            elif enemy.type == 'fast':
+                                base_score = 15
+                            score += int(base_score * player.score_multiplier)
                             
                             # Life steal
                             if player.lifesteal > 0:
@@ -233,12 +280,26 @@ def game_loop():
         draw_text(f"TIME: {minutes_left}:{seconds_left:02d}", font, WHITE, 10, 10)
         draw_text(f"KILLS: {kills}/{exp_needed}", font, WHITE, 10, 50)
         draw_text(f"LEVEL: {level}", font, WHITE, 10, 90)
-        draw_text(f"HEALTH: {player.health}", font, RED if player.health < 30 else GREEN, 10, 130)
+        draw_text(f"HEALTH: {int(player.health)}", font, RED if player.health < 30 else GREEN, 10, 130)
         draw_text(f"SCORE: {score}", font, YELLOW, 10, 170)
         draw_text(f"AMMO: UNLIMITED", font, BLUE, 10, 210)
         
+        # Difficulty indicator
+        difficulty_color = GREEN
+        if minutes_passed >= 3:
+            difficulty_color = YELLOW
+        if minutes_passed >= 4:
+            difficulty_color = ORANGE
+        if minutes_passed >= 4.5:
+            difficulty_color = RED
+        draw_text(f"DIFFICULTY: {current_difficulty_minute}/5", small_font, difficulty_color, 10, 245)
+        
+        # Enemy stat indicators
+        draw_text(f"ENEMY HP: +{int(current_difficulty_minute * 0.5 * 100)}%", small_font, RED, 10, 265)
+        draw_text(f"ENEMY SPEED: +{int(current_difficulty_minute * 15)}%", small_font, RED, 10, 285)
+        
         # Show power-ups
-        y_offset = 250
+        y_offset = 310
         for powerup in player.active_powerups[-5:]:  # Show last 5
             draw_text(f"✨ {powerup}", small_font, BLUE, 10, y_offset)
             y_offset += 20
@@ -247,6 +308,11 @@ def game_loop():
         if time_left < 30000:  # Last 30 seconds
             if (pygame.time.get_ticks() % 500) < 250:
                 draw_text("FINAL STAND!", big_font, RED, SCREEN_WIDTH//2, SCREEN_HEIGHT//2, center=True)
+        
+        # Difficulty warning
+        if minutes_passed >= 4:
+            if (pygame.time.get_ticks() % 1000) < 500:
+                draw_text("⚠️ MAXIMUM DIFFICULTY ⚠️", small_font, RED, SCREEN_WIDTH//2, 50, center=True)
         
         pygame.display.flip()
         clock.tick(60)
