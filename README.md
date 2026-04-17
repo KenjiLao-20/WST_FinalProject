@@ -3,7 +3,7 @@
 A retro-style top-down shooter where you survive 5 minutes against endless hordes of enemies. Level up, choose power-ups, and fight increasingly difficult enemies.
 
 ## Play Online
-https://kenjilao-20.github.io/WST_FinalProject/team.html
+https://kenjilao-20.github.io/WST_FinalProject/index.html
 
 ## Controls
 
