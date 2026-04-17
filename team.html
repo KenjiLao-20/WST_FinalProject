@@ -5,44 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team | Top-Down Shooter</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
-        <h1>👥 TEAM MEMBERS</h1>
+        <div class="logo">
+            <span class="logo-icon">5 Minutes Till Dawn</span>
+            <h1>DEVELOPMENT TEAM</h1>
+        </div>
         <nav>
-            <a href="index.html">Game</a>
-            <a href="team.html" class="active">Team</a>
+            <a href="index.html">GAME</a>
+            <a href="team.html" class="active">TEAM</a>
         </nav>
     </header>
 
     <main>
+        <section class="team-hero">
+            <h2 class="glitch-text">MEET THE CREATORS</h2>
+            <p>Two developers, one vision - creating the ultimate top-down shooter experience</p>
+        </section>
+
         <section class="team-container">
-            <div class="team-card">
-                <h2>Student A</h2>
-                <p class="role">🎮 Lead Developer & Game Logic</p>
-                <p>Responsible for core game loop, enemy AI, boss mechanics, and bullet system.</p>
-                <a href="https://github.com/studentA" target="_blank" class="github-link">GitHub Profile →</a>
+            <div class="team-card lead">
+                <div class="card-header">
+                    <h2>Kenji Lao</h2>
+                </div>
+                <p class="role">Game Logic and Mechanics</p>
+                <div class="contribution-list">
+                    <h4>Contributions:</h4>
+                    <ul>
+                        <li>Separate web files for deploy</li>
+                        <li>Added audio and font files</li>
+                        <li>Changed font file design</li>
+                        <li>Updated title and background</li>
+                        <li>Added character models</li>
+                        <li>Fixed bug on powerups</li>
+                        <li>Added new level up mechanic</li>
+                        <li>Enemy scaling system</li>
+                        <li>Fixed bug crashing</li>
+                        <li>Made bullets unlimited</li>
+                        <li>added powerup mechanics</li>
+                        <li>Added game prototype and page</li>
+                        <li>Added py files and folders</li>
+                    </ul>
+                </div>
+                <a href="https://github.com/KenjiLao-20" target="_blank" class="github-link">
+                    GitHub Profile →
+                </a>
             </div>
+
             <div class="team-card">
-                <h2>Student B</h2>
-                <p class="role">🌐 Web Developer & UI/UX</p>
-                <p>Responsible for GitHub Pages website, styling, documentation, and game integration.</p>
-                <a href="https://github.com/studentB" target="_blank" class="github-link">GitHub Profile →</a>
+                <div class="card-header">
+                    <h2>Jaymark Francisco</h2>
+                </div>
+                <p class="role">Web and Frontend Development</p>
+                <div class="contribution-list">
+                    <h4>Contributions:</h4>
+                    <ul>
+                        <li>Updated Header</li>
+                        <li>Updated power up system</li>
+                        <li>Updated player mechanics</li>
+                        <li>Updated main.py game loop</li>
+                        <li>Updated enemy AI</li>
+                        <li>Updated bullet system</li>
+                        <li>Added boss battle mechanics</li>
+                    </ul>
+                </div>
+                <a href="https://github.com/jaymark-28" target="_blank" class="github-link">
+                    GitHub Profile →
+                </a>
             </div>
         </section>
-        <section class="contribution-log">
-            <h3>📝 Collaboration Summary</h3>
-            <ul>
-                <li>Shared repository with 5+ commits per student</li>
-                <li>Weekly sync meetings + code reviews</li>
-                <li>Game mechanics developed by Student A</li>
-                <li>Website & deployment by Student B</li>
-            </ul>
+
+        <section class="logs-section">
+            <h3>DEVELOPMENT LOGS</h3>
+            <div class="logs-image-container">
+                <img src="logs.png" alt="Development Logs" class="logs-image">
+            </div>
+        </section>
+        
+        <section class="tech-stack">
+            <h3>TECH STACK</h3>
+            <div class="tech-icons">
+                <span>Python</span>
+                <span>Pygame</span>
+                <span>HTML5</span>
+                <span>CSS3</span>
+                <span>JavaScript</span>
+                <span>GitHub</span>
+            </div>
         </section>
     </main>
 
     <footer>
-        <p>GitHub Pages Hosting | Project Repository: <a href="#">your-repo-link</a></p>
+        <p>GitHub Pages Hosting | Project Repository: <a href="#">https://github.com/KenjiLao-20/WST_FinalProject</a></p>
+        <p class="footer-note">Made for 2nd Year IT Project</p>
     </footer>
 </body>
 </html>

@@ -3,51 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Top-Down Shooter | Game Portal</title>
+    <title>Top-Down Shooter | 5 Minutes Till Dawn</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
-         <h1>🔫 TOP-DOWN SHOOTER</h1>
+        <div class="logo">
+            <h1>5 Minutes Till Dawn</h1>
+        </div>
         <nav>
-            <a href="index.html" class="active">Game</a>
-            <a href="team.html">Team</a>
+            <a href="index.html" class="active">GAME</a>
+            <a href="team.html">TEAM</a>
         </nav>
     </header>
 
     <main>
         <section class="hero">
             <div class="game-preview">
-                <div class="placeholder">
-                    🎮 Game Demo Preview
+                <div class="game-screen">
+                    <img src="preview.png" alt="Game Preview" class="preview-image">
                 </div>
+                
                 <div class="download-section">
-                    <a href="../game/main.py" download class="btn primary">⬇️ Download Game (Python)</a>
-                    <p class="note">Requires Python + Pygame. See README for setup.</p>
+                    <div class="download-card">
+                        <div class="download-icon">5 Minutes Till Dawn</div>
+                        <h3>Download Game</h3>
+                        <p>Python + Pygame required</p>
+                        <a href="game.zip" download class="btn primary" id="downloadBtn">
+                            DOWNLOAD GAME (ZIP)
+                        </a>
+                        <p class="note">Includes all Python files and assets</p>
+                    </div>
                 </div>
             </div>
+            
             <div class="instructions">
-                <h2>📖 How to Play</h2>
-                <ul>
-                    <li><strong>WASD</strong> - Move your character</li>
-                    <li><strong>Mouse</strong> - Aim</li>
-                    <li><strong>Left Click</strong> - Shoot</li>
-                    <li>Kill <strong>15 enemies</strong> to spawn the boss</li>
-                    <li>Defeat the boss to win!</li>
-                </ul>
-                <h3>⚡ Features</h3>
-                <ul>
-                    <li>Top-down twin-stick style shooter</li>
-                    <li>Ammo system & reload mechanic</li>
-                    <li>Boss battle with health bar</li>
-                    <li>Score tracking</li>
-                </ul>
+                <div class="instruction-header">
+                    <h2>HOW TO PLAY</h2>
+                </div>
+                
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <h3>MOVEMENT</h3>
+                        <div class="keys">
+                            <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>
+                        </div>
+                        <p>Move your character</p>
+                    </div>
+                    <div class="control-group">
+                        <h3>AIM AND SHOOT</h3>
+                        <div class="keys">
+                            <kbd>MOUSE</kbd> <kbd>LEFT CLICK</kbd>
+                        </div>
+                        <p>Aim with mouse, click to shoot</p>
+                    </div>
+                </div>
+                
+                <div class="game-mechanics">
+                    <h3>GAME MECHANICS</h3>
+                    <ul class="mechanics-list">
+                        <li>Kill <strong>15 enemies</strong> to level up</li>
+                        <li>Choose <strong>power-ups</strong> each level</li>
+                        <li>Enemies get stronger every minute</li>
+                        <li>Survive <strong>5 minutes</strong> to win</li>
+                    </ul>
+                </div>
+                
+                <div class="setup-instructions">
+                    <h3>SETUP INSTRUCTIONS</h3>
+                    <div class="setup-steps">
+                        <div class="step">
+                            <span class="step-number">1</span>
+                            <p>Download and extract the ZIP file</p>
+                        </div>
+                        <div class="step">
+                            <span class="step-number">2</span>
+                            <p>Install Python from python.org</p>
+                        </div>
+                        <div class="step">
+                            <span class="step-number">3</span>
+                            <p>Install Pygame: <code>pip install pygame</code></p>
+                        </div>
+                        <div class="step">
+                            <span class="step-number">4</span>
+                            <p>Run <code>python main.py</code> in the terminal</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feature-badges">
+                    <span class="badge">8-bit Style</span>
+                    <span class="badge">Boss Battle</span>
+                    <span class="badge">15+ Power-ups</span>
+                    <span class="badge">Retro Soundtrack</span>
+                </div>
+            </div>
+        </section>
+        
+        <section class="system-requirements">
+            <h3>SYSTEM REQUIREMENTS</h3>
+            <div class="req-grid">
+                <div class="req-item">Python 3.7+</div>
+                <div class="req-item">Pygame 2.0+</div>
+                <div class="req-item">100MB Storage</div>
+                <div class="req-item">Windows/Mac/Linux</div>
             </div>
         </section>
     </main>
 
     <footer>
         <p>Game Development Project | 2nd Year IT | 14-Day Sprint</p>
+        <p class="footer-links">
+            <a href="#">GitHub Repository</a> | 
+            <a href="#">Report Bug</a>
+        </p>
     </footer>
+
+    <script src="download-game.js"></script>
 </body>
 </html>
