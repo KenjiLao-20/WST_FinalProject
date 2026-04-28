@@ -5,6 +5,8 @@ A retro-style top-down shooter where you survive 5 minutes against endless horde
 ## Play Online
 https://kenjilao-20.github.io/WST_FinalProject/index.html
 
+![Game Screenshot](ss.png)
+
 ## Controls
 
 WASD - Move character
